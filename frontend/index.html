@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Convert & Chatbot</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <!-- Sidebar Trigger -->
+    <div class="sidebar-trigger"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Chat History</h2>
+            <p class="sidebar-subtitle">Previous conversations</p>
+        </div>
+        <div class="sidebar-section">
+            <button class="new-chat-btn" id="newChatBtn">
+                <span>+</span>
+                <span>New Chat</span>
+            </button>
+        </div>
+        <div class="sidebar-section">
+            <h3 class="section-title">History</h3>
+            <div class="chat-history" id="chatHistory">
+                <!-- Chat history items will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">AI Assistant</div>
+        <div class="header-actions">
+            <div class="status">
+                <span class="status-indicator"></span>
+                <span id="status">Online</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="message">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    Hello! I'm your AI Assistant. I can help you with PDF conversions, document management, and answer any questions you have. How can I assist you today?
+                </div>
+            </div>
+        </div>
+        <!-- Analysis row (no PDF viewer) -->
+        <div id="analysis-row" style="display:none; width:100%; height:60vh; flex-direction:row;">
+            <div id="analysis-output" style="flex:1; overflow-y:auto;"></div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <textarea 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="Ask me anything about PDFs or conversions..."
+                    autocomplete="off"
+                    rows="1"
+                ></textarea>
+            </div>
+            <button class="send-btn" id="sendBtn">→</button>
+        </div>
+    </main>
+
+    <!-- PDF Selector Button -->
+    <button class="pdf-selector" id="pdfSelector">📄</button>
+
+    <!-- PDF Converter Panel -->
+    <div class="pdf-panel" id="pdfPanel">
+        <div class="pdf-panel-header">
+            <h3 class="pdf-panel-title">
+                <span>📄</span>
+                <span>Quick PDF Converter</span>
+            </h3>
+            <button class="close-panel" id="closePanel">×</button>
+        </div>
+        <div class="drop-zone" id="dropZonePanel">
+            <div class="drop-zone-content">
+                <span class="drop-zone-icon">📁</span>
+                <p class="drop-zone-text">Drag & Drop your files here</p>
+                <p class="drop-zone-hint">or click to browse</p>
+            </div>
+        </div>
+        <input type="file" id="fileInputPanel" class="file-input" accept=".pdf" multiple>
+        <!-- Persona and Job Inputs -->
+        <div style="margin: 1.5rem 0;">
+            <label for="personaInput" style="display:block; margin-bottom:0.5rem; font-weight:600;">Persona (Role):</label>
+            <input type="text" id="personaInput" placeholder="e.g. Travel Planner" style="width:100%; padding:0.75rem; border-radius:8px; border:1px solid #8DB1A4; margin-bottom:1rem;">
+            <label for="jobInput" style="display:block; margin-bottom:0.5rem; font-weight:600;">Job to be Done (Task):</label>
+            <textarea id="jobInput" rows="2" placeholder="e.g. Plan a trip of 4 days for a group of 10 college friends." style="width:100%; padding:0.75rem; border-radius:8px; border:1px solid #8DB1A4;"></textarea>
+        </div>
+        <button class="convert-btn" id="analyzeBtnPanel" style="margin-top:1rem; background: var(--gradient-accent);">Analyze</button>
+        <div class="progress-container" id="progressContainerPanel">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFillPanel"></div>
+            </div>
+            <p class="progress-text" id="progressTextPanel">0%</p>
+        </div>
+        <div class="file-list" id="fileListPanel">
+            <div id="fileItemsPanel"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
