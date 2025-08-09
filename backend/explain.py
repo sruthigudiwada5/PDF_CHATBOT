@@ -55,8 +55,10 @@ def summarize_text(text, max_len=80):
         print(f"[WARN] Summarization failed: {e}")
         return text  # fallback
 
-def explain_topic(query):
-    """Main function to search and summarize explanations."""
+def explain_topic(query, out_path=None):
+    """Main function to search and summarize explanations.
+    If out_path is provided, save the results there; else defaults to output/explain.json.
+    """
     stage1_folder = Path(__file__).parent / "output" / "1a_outlines"
     results = []
 
@@ -84,7 +86,7 @@ def explain_topic(query):
     log_mem("After all PDFs processed for explanation")
 
     # Save results locally
-    output_file = Path(__file__).parent / "output" / "explain.json"
+    output_file = Path(out_path) if out_path else (Path(__file__).parent / "output" / "explain.json")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
@@ -93,6 +95,11 @@ def explain_topic(query):
     return results
 
 if __name__ == "__main__":
-    user_query = input("Enter topic to explain: ")
-    output = explain_topic(user_query)
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate explanations for a topic from Stage 1 outlines.")
+    parser.add_argument("--topic", required=True, help="Topic or query to explain")
+    parser.add_argument("--out", default=str(Path(__file__).parent / "output" / "explain.json"), help="Output JSON file path")
+    args = parser.parse_args()
+
+    output = explain_topic(args.topic, Path(args.out))
     print(json.dumps(output, ensure_ascii=False, indent=2))

@@ -2,7 +2,8 @@
 import sys
 import subprocess
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, JSONResponse
+from fastapi import FastAPI, UploadFile, File, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import json
@@ -38,7 +39,7 @@ app.add_middleware(
 
 # ------------------ UPLOAD & STAGE 1 ------------------
 @app.post("/upload/")
-async def upload_files(files: list[UploadFile] = File(...)):
+async def upload_files(request: Request, files: list[UploadFile] = File(...)):
     """
     Upload only PDF files, then run Stage 1 only.
     """

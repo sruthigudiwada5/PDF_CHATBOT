@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import json
 from pathlib import Path
 from fastapi import FastAPI
@@ -17,13 +18,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def run_script(script_name, output_file=None):
-    """Run a Python script and optionally return JSON output."""
-    result = subprocess.run(
-        ["python3", str(BASE_DIR / script_name)],
-        capture_output=True,
-        text=True
-    )
+def run_script(script_name, output_file=None, args=None):
+    """Run a Python script and optionally return JSON output.
+    script_name: file name of the script in the same directory.
+    output_file: Path object for expected JSON output to return.
+    args: list of additional CLI arguments to pass to the script.
+    """
+    cmd = [sys.executable, str(BASE_DIR / script_name)]
+    if args:
+        cmd.extend(map(str, args))
+    result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         return {"status": "error", "stderr": result.stderr}
     
@@ -32,10 +36,6 @@ def run_script(script_name, output_file=None):
             return {"status": "success", "data": json.load(f)}
     
     return {"status": "success", "stdout": result.stdout}
-
-@app.get("/mcqs/")
-def run_mcqs():
-    return run_script("mcqs.py", OUTPUT_DIR / "mcqs.json")
 
 
 @app.get("/summary/")
@@ -61,14 +61,9 @@ async def run_analyze(config: UploadFile = File(...)):
 
 @app.get("/explain/")
 def run_explain(topic: str):
-    return run_script("explain.py", OUTPUT_DIR / f"explain_{topic}.json")
-
-
-@app.get("/flashcards/")
-def run_flashcards():
-    return run_script("flashcards.py", OUTPUT_DIR / "flashcards.json")
-
-
-@app.get("/mindmap/")
-def run_mindmap():
-    return run_script("mindmap.py", OUTPUT_DIR / "mindmap.json")
+    out_path = OUTPUT_DIR / f"explain_{topic}.json"
+    return run_script(
+        "explain.py",
+        output_file=out_path,
+        args=["--topic", topic, "--out", str(out_path)]
+    )
