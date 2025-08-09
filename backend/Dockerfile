@@ -23,7 +23,6 @@ ENV PYTHONUNBUFFERED=1
 
 # --- 4. COPY FILES ---
 COPY ./main.py ./main.py
-COPY ./process_pdfs.py ./process_pdfs.py
 COPY ./analyze_collections.py ./analyze_collections.py
 COPY ./heading_extractor.py ./heading_extractor.py
 COPY ./requirements.txt ./requirements.txt
