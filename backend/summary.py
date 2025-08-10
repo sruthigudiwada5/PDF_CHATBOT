@@ -12,7 +12,7 @@ import os
 nltk.download('punkt', quiet=True)
 
 # Load lightweight embedding model
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L3-v2')
 
 # Debug: Print memory usage after model load
 process = psutil.Process(os.getpid())
