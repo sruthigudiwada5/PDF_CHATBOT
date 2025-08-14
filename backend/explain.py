@@ -2,104 +2,105 @@ import json
 from pathlib import Path
 import psutil
 import os
-import nltk
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-from transformers import pipeline
+import gc
+import re
+from typing import List, Dict, Any
 
-nltk.download('punkt', quiet=True)
+# Memory logging
+def log_memory(stage: str) -> float:
+    """Log memory usage in MB."""
+    try:
+        process = psutil.Process(os.getpid())
+        mem_mb = process.memory_info().rss / 1024 / 1024
+        print(f"[MEMORY] {stage}: {mem_mb:.2f} MB")
+        return mem_mb
+    except Exception as e:
+        print(f"[ERROR] Memory logging failed: {e}")
+        return 0
 
-# RAM usage logger
-process = psutil.Process(os.getpid())
-def log_mem(stage):
-    print(f"[DEBUG] {stage} - Memory usage: {process.memory_info().rss / 1024 / 1024:.2f} MB")
-
-# Load models
-log_mem("Before model load")
-embedder = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L3-v2')
-log_mem("After embedding model load")
-summarizer = pipeline("summarization", model="t5-small", tokenizer="t5-small", framework="pt", device=-1)  # CPU only
-log_mem("After T5-small summarizer load")
-
-def find_relevant_sections(json_data, query, top_k=3):
-    """Search headings + content for most relevant matches to the query."""
-    sections = []
-    for item in json_data.get("outline", []):
-        heading = item.get("heading", "")
-        content = item.get("content", "")
-        combined_text = f"{heading}. {content}".strip()
-        if combined_text:
-            sections.append((heading, combined_text))
-    
-    if not sections:
+def load_sections() -> List[Dict[str, str]]:
+    """Load and return sections from outline files."""
+    outline_dir = Path("output/1a_outlines")
+    if not outline_dir.exists():
         return []
     
-    # Embed query + all sections
-    query_embedding = embedder.encode([query])
-    section_embeddings = embedder.encode([sec[1] for sec in sections])
-
-    # Compute similarity
-    similarities = cosine_similarity(query_embedding, section_embeddings)[0]
-    ranked_indices = similarities.argsort()[::-1][:top_k]
+    sections = []
+    for file in outline_dir.glob("*.json"):
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for sec in data.get("outline", []):
+                    sections.append({
+                        "title": sec.get("heading", sec.get("text", "")).lower(),
+                        "content": sec.get("content", ""),
+                        "document": file.stem
+                    })
+        except Exception as e:
+            print(f"Error loading {file}: {e}")
     
-    return [sections[i] for i in ranked_indices]
+    return sections
 
-def summarize_text(text, max_len=80):
-    """Summarize the text into a concise explanation."""
-    if not text.strip():
-        return ""
+def simple_match_score(query: str, text: str) -> int:
+    """Simple word-based matching score."""
+    if not query or not text:
+        return 0
+    query_words = set(word.lower() for word in re.findall(r'\w+', query))
+    text_words = set(word.lower() for word in re.findall(r'\w+', text))
+    common = query_words.intersection(text_words)
+    return len(common) / len(query_words) * 100 if query_words else 0
+
+def simple_summarize(text: str, max_sentences: int = 2) -> str:
+    """Lightweight extractive summarization."""
+    sentences = re.split(r'(?<=[.!?]) +', text.strip())
+    return ' '.join(sentences[:max_sentences])
+
+def explain_topic(query: str, top_k: int = 3) -> Dict[str, Any]:
+    """Explain a topic with minimal memory usage."""
+    log_memory("Start Explain")
+    
     try:
-        summary = summarizer(text, max_length=max_len, min_length=20, do_sample=False)[0]['summary_text']
-        return summary.strip()
+        # Load and process sections
+        sections = load_sections()
+        if not sections:
+            return {"error": "No content available. Please process some documents first."}
+        
+        # Score each section
+        scored_sections = []
+        for section in sections:
+            title_score = simple_match_score(query, section["title"]) * 1.5  # Weight title matches more
+            content_score = simple_match_score(query, section["content"])
+            total_score = (title_score + content_score) / 2.5  # Normalize score
+            
+            if total_score > 20:  # Only include relevant sections
+                scored_sections.append((section, total_score))
+        
+        # Sort by score and take top_k
+        scored_sections.sort(key=lambda x: x[1], reverse=True)
+        results = []
+        
+        for section, score in scored_sections[:top_k]:
+            results.append({
+                "heading": section["title"].title(),  # Title case for display
+                "document": section["document"],
+                "score": round(score, 2),
+                "explanation": simple_summarize(section["content"])
+            })
+        
+        log_memory("End Explain")
+        return {"topic": query, "results": results}
+    
     except Exception as e:
-        print(f"[WARN] Summarization failed: {e}")
-        return text  # fallback
-
-def explain_topic(query, out_path=None):
-    """Main function to search and summarize explanations.
-    If out_path is provided, save the results there; else defaults to output/explain.json.
-    """
-    stage1_folder = Path(__file__).parent / "output" / "1a_outlines"
-    results = []
-
-    log_mem("Before processing PDFs for explanation")
-
-    for filepath in stage1_folder.glob("*.json"):
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        relevant_sections = find_relevant_sections(data, query)
-        if not relevant_sections:
-            continue
-
-        combined_text = " ".join(sec[1] for sec in relevant_sections)
-        log_mem(f"Before summarizing {filepath.name}")
-        summary = summarize_text(combined_text)
-        log_mem(f"After summarizing {filepath.name}")
-
-        results.append({
-            "pdf_name": Path(filepath).stem,
-            "title": data.get("title", "Untitled"),
-            "explanation": summary
-        })
-
-    log_mem("After all PDFs processed for explanation")
-
-    # Save results locally
-    output_file = Path(out_path) if out_path else (Path(__file__).parent / "output" / "explain.json")
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
-
-    print(f"[OK] Explanations saved to {output_file}")
-    return results
+        log_memory(f"Error in explain_topic: {str(e)}")
+        return {"error": f"Processing error: {str(e)}"}
+    finally:
+        gc.collect()
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Generate explanations for a topic from Stage 1 outlines.")
-    parser.add_argument("--topic", required=True, help="Topic or query to explain")
-    parser.add_argument("--out", default=str(Path(__file__).parent / "output" / "explain.json"), help="Output JSON file path")
+    parser = argparse.ArgumentParser(description="Explain a topic using processed documents")
+    parser.add_argument("--topic", required=True, help="Topic to explain")
+    parser.add_argument("--top_k", type=int, default=3, help="Number of results to return")
     args = parser.parse_args()
-
-    output = explain_topic(args.topic, Path(args.out))
-    print(json.dumps(output, ensure_ascii=False, indent=2))
+    
+    result = explain_topic(args.topic, args.top_k)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
