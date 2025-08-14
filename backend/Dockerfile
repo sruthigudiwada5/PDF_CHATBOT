@@ -5,10 +5,11 @@ FROM --platform=linux/amd64 python:3.10-slim
 WORKDIR /app
 
 # --- 1. INSTALL SYSTEM DEPENDENCIES ---
-RUN apt-get update && apt-get install -y \
+    RUN apt-get update && apt-get install -y \
     tesseract-ocr \
-    libgl1-mesa-glx \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
+
 
 # --- 2. CREATE DIRECTORIES ---
 RUN mkdir -p /app/model_cache /app/nltk_data /app/input /app/output \
