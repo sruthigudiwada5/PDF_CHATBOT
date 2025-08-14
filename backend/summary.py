@@ -80,7 +80,7 @@ def main():
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(final_output, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ Summaries written to {output_file}")
+    print(f"[OK] Summaries written to {output_file}")
     print(f"[DEBUG] Memory usage after all summarization: {process.memory_info().rss / 1024 / 1024:.2f} MB")
     # This script now works both locally and on Render/Docker
 

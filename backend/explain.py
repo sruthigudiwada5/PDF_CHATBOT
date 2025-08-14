@@ -91,7 +91,7 @@ def explain_topic(query, out_path=None):
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ Explanations saved to {output_file}")
+    print(f"[OK] Explanations saved to {output_file}")
     return results
 
 if __name__ == "__main__":
