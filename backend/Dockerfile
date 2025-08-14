@@ -27,7 +27,6 @@ COPY ./analyze_collections.py ./analyze_collections.py
 COPY ./heading_extractor.py ./heading_extractor.py
 COPY ./requirements.txt ./requirements.txt
 COPY ./setup_offline_assets.py ./setup_offline_assets.py
-COPY ./features.py ./features.py
 COPY ./summary.py ./summary.py
 COPY ./explain.py ./explain.py
 
