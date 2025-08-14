@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const API_BASE = 'http://localhost:9000'; // Single base URL (combined app)
+  const API_BASE = 'https://pdf-chatbot-7hnb.onrender.com/upload'; // Single base URL (combined app)
 
   const uBtn = document.getElementById('uBtn');
   const aBtn = document.getElementById('aBtn');

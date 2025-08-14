@@ -270,6 +270,7 @@ async def run_explain(topic: str = ""):
     )
 
 # ------------------ ROOT ------------------
-@app.get("/")
+@app.get("/", include_in_schema=False)
+@app.head("/", include_in_schema=False)
 def root():
     return {"message": "PDF Processing API - Stage 1 Ready"}
