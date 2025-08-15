@@ -64,7 +64,7 @@ def download_models():
         tokenizer = AutoTokenizer.from_pretrained(summarizer_name, cache_dir=cache_dir)
         model = AutoModelForSeq2SeqLM.from_pretrained(summarizer_name, cache_dir=cache_dir)
         _ = (tokenizer is not None) and (model is not None)
-    logger.info(f"Summarizer model '{summarizer_name}' downloaded successfully")
+        logger.info(f"Summarizer model '{summarizer_name}' downloaded successfully")
     except Exception as e:
         logger.error(f"Error downloading summarizer: {str(e)}")
         ok = False
