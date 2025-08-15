@@ -32,35 +32,31 @@ def setup_directories():
             logger.error(f"Failed to create directory {dir_path}: {str(e)}")
             raise
 
-def download_model():
-    """Download and cache the sentence transformer model."""
-    model_name = 'paraphrase-MiniLM-L3-v2'
+def download_models():
+    """Download and cache all required models."""
     cache_dir = os.getenv('SENTENCE_TRANSFORMERS_HOME', '/app/model_cache')
-    
-    logger.info(f"Downloading model '{model_name}' to: {cache_dir}")
-    
+
+    # 1️⃣ Download embedder
+    embedder_name = 'paraphrase-MiniLM-L3-v2'
+    logger.info(f"Downloading embedder model '{embedder_name}' to: {cache_dir}")
     try:
-        # Verify we can write to the cache directory
-        test_file = os.path.join(cache_dir, 'write_test')
-        with open(test_file, 'w') as f:
-            f.write('test')
-        os.remove(test_file)
-        
-        # Download the model
-        model = SentenceTransformer(model_name, cache_folder=cache_dir)
-        # Explicitly save model to absolute path for Docker
-        abs_save_path = "/app/model_cache/paraphrase-MiniLM-L3-v2"
-        model.save(abs_save_path)
-        logger.info(f"Model explicitly saved to {abs_save_path}")
-        # Verify the model files
-        model_files = os.listdir(abs_save_path)
-        if not model_files:
-            raise Exception("No model files found after download/save")
-        logger.info(f"Model downloaded and saved successfully. Found {len(model_files)} files in cache.")
-        return True
+        embedder = SentenceTransformer(embedder_name, cache_folder=cache_dir)
+        embedder_save_path = os.path.join(cache_dir, embedder_name)
+        embedder.save(embedder_save_path)
+        logger.info(f"Embedder saved to {embedder_save_path}")
     except Exception as e:
-        logger.error(f"Error downloading model: {str(e)}")
-        return False
+        logger.error(f"Error downloading embedder: {str(e)}")
+
+    # 2️⃣ Download summarization model
+    summarizer_name = 'sshleifer/distilbart-cnn-12-6'
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    logger.info(f"Downloading summarizer model '{summarizer_name}' to: {cache_dir}")
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(summarizer_name, cache_dir=cache_dir)
+        model = AutoModelForSeq2SeqLM.from_pretrained(summarizer_name, cache_dir=cache_dir)
+        logger.info(f"Summarizer model '{summarizer_name}' downloaded successfully")
+    except Exception as e:
+        logger.error(f"Error downloading summarizer: {str(e)}")
 
 def download_nltk_data():
     """Download required NLTK data."""
@@ -91,9 +87,9 @@ def main():
         setup_directories()
         
         # Download model
-        if not download_model():
+        if not download_models():
             logger.error("Model download failed. The application may not work correctly.")
-        
+
         # Download NLTK data
         download_nltk_data()
         
