@@ -12,6 +12,7 @@ import os
 import glob
 import urllib.parse
 import traceback
+import re
 
 # ------------------ CONFIG ------------------
 BASE_DIR = Path(__file__).parent
@@ -262,7 +263,9 @@ async def run_analyze(config: UploadFile = File(...)):
 
 @app.get("/explain/")
 async def run_explain(topic: str = ""):
-    out_path = OUTPUT_DIR / f"explain_{topic}.json"
+    # Sanitize topic for filename so we can safely write the output file
+    safe_topic = re.sub(r'[^A-Za-z0-9._-]+', '_', topic).strip('_') or 'topic'
+    out_path = OUTPUT_DIR / f"explain_{safe_topic}.json"
     return run_script(
         "explain.py",
         output_file=out_path,
